@@ -1,11 +1,11 @@
-interface Token {
+export interface Token {
   type: TokenType
   value: string
   start: number
   end: number
 }
 
-enum TokenType {
+export enum TokenType {
   OPERATOR,
   KEYWORD,
   NEWLINE,
