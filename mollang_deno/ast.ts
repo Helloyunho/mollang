@@ -129,4 +129,28 @@ export class ASTParser {
 
     return ast
   }
+
+  parseMultiplyOp(left?: NumberOperatorAST): MultiplyOperatorAST {
+    left = left ?? this.parseNumberOp()
+    this.checkToken(TokenType.OPERATOR, ['.'])
+    this.index++
+    const right = this.parseNumberOp()
+    this.index++
+    const ast: MultiplyOperatorAST = {
+      type: ASTType.MultiplyOperator,
+      left,
+      right
+    }
+
+    return ast
+  }
+
+  parseMultiplyOrNumberOp(): NumberOperatorAST | MultiplyOperatorAST {
+    const num = this.parseNumberOp()
+    if (this.checkToken(TokenType.OPERATOR, ['.'], false)) {
+      return this.parseMultiplyOp(num)
+    } else {
+      return num
+    }
+  }
 }
