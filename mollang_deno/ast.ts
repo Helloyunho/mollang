@@ -271,4 +271,26 @@ export class ASTParser {
       }
     }
   }
+
+  parseConsoleConvertedOut(error?: true): ConsoleConvertedOutAST
+  parseConsoleConvertedOut(error?: false): ConsoleConvertedOutAST | undefined
+  parseConsoleConvertedOut(error?: boolean): ConsoleConvertedOutAST | undefined
+  parseConsoleConvertedOut(error = true): ConsoleConvertedOutAST | undefined {
+    if (this.checkToken([TokenType.KEYWORD], ['아'], error)) {
+      this.index++
+      const value = this.parseValue(error)
+      if (value) {
+        if (this.checkToken([TokenType.KEYWORD], ['루'], error)) {
+          this.index++
+          const ast: ConsoleConvertedOutAST = {
+            type: ASTType.ConsoleConvertedOut,
+            value
+          }
+          this.index++
+
+          return ast
+        }
+      }
+    }
+  }
 }
