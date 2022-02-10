@@ -41,6 +41,7 @@ export interface MultiplyOperatorAST {
 
 export interface VariableAST {
   type: ASTType.Variable
+  index: number
   assign?: ValueASTs
 }
 
@@ -87,7 +88,10 @@ export class ASTParser {
       } else {
         return false
       }
-    } else if (values.length !== 0 && !values.includes(token.value)) {
+    } else if (
+      values.length !== 0 &&
+      !values.some((v) => token.value.startsWith(v))
+    ) {
       if (error) {
         throw new Error(
           `Expected syntax between ${values}, but got ${token.value}`
@@ -108,6 +112,11 @@ export class ASTParser {
   checkAndGetToken(
     type: TokenType,
     values?: string[],
+    error?: boolean
+  ): Token | undefined
+  checkAndGetToken(
+    type: TokenType,
+    values?: string[],
     error = true
   ): Token | undefined {
     if (this.checkToken(type, values, error)) {
@@ -115,42 +124,89 @@ export class ASTParser {
     }
   }
 
-  parseNumberOp(): NumberOperatorAST {
-    const token = this.checkAndGetToken(TokenType.OPERATOR, ['?', '!'])
-    const ast: NumberOperatorAST = {
-      type: ASTType.NumberOperator,
-      opType: token.value === '?' ? '+' : '-'
-    }
+  parseNumberOp(error?: true): NumberOperatorAST
+  parseNumberOp(error?: false): NumberOperatorAST | undefined
+  parseNumberOp(error?: boolean): NumberOperatorAST | undefined
+  parseNumberOp(error = true): NumberOperatorAST | undefined {
+    const token = this.checkAndGetToken(TokenType.OPERATOR, ['?', '!'], error)
+    if (token) {
+      const ast: NumberOperatorAST = {
+        type: ASTType.NumberOperator,
+        opType: token.value === '?' ? '+' : '-'
+      }
 
-    this.index++
-    if (this.checkToken(TokenType.OPERATOR, ['?', '!'], false)) {
-      ast.chain = this.parseNumberOp()
-    }
+      this.index++
+      if (this.checkToken(TokenType.OPERATOR, ['?', '!'], false)) {
+        ast.chain = this.parseNumberOp()
+      }
 
-    return ast
+      return ast
+    }
   }
 
-  parseMultiplyOp(left?: NumberOperatorAST): MultiplyOperatorAST {
-    left = left ?? this.parseNumberOp()
-    this.checkToken(TokenType.OPERATOR, ['.'])
-    this.index++
-    const right = this.parseNumberOp()
-    this.index++
-    const ast: MultiplyOperatorAST = {
-      type: ASTType.MultiplyOperator,
-      left,
-      right
-    }
+  parseMultiplyOp(left?: NumberOperatorAST, error?: true): MultiplyOperatorAST
+  parseMultiplyOp(
+    left?: NumberOperatorAST,
+    error?: false
+  ): MultiplyOperatorAST | undefined
+  parseMultiplyOp(
+    left?: NumberOperatorAST,
+    error?: boolean
+  ): MultiplyOperatorAST | undefined
+  parseMultiplyOp(
+    left?: NumberOperatorAST,
+    error = true
+  ): MultiplyOperatorAST | undefined {
+    left = left ?? this.parseNumberOp(error)
+    if (left) {
+      if (this.checkToken(TokenType.OPERATOR, ['.'], error)) {
+        this.index++
+        const right = this.parseNumberOp()
+        this.index++
+        const ast: MultiplyOperatorAST = {
+          type: ASTType.MultiplyOperator,
+          left,
+          right
+        }
 
-    return ast
+        return ast
+      }
+    }
   }
 
-  parseMultiplyOrNumberOp(): NumberOperatorAST | MultiplyOperatorAST {
-    const num = this.parseNumberOp()
+  parseMultiplyOrNumberOp(error?: true): NumberOperatorAST | MultiplyOperatorAST
+  parseMultiplyOrNumberOp(
+    error?: false
+  ): NumberOperatorAST | MultiplyOperatorAST | undefined
+  parseMultiplyOrNumberOp(
+    error?: boolean
+  ): NumberOperatorAST | MultiplyOperatorAST | undefined
+  parseMultiplyOrNumberOp(
+    error = true
+  ): NumberOperatorAST | MultiplyOperatorAST | undefined {
+    const num = this.parseNumberOp(error)
     if (this.checkToken(TokenType.OPERATOR, ['.'], false)) {
       return this.parseMultiplyOp(num)
     } else {
       return num
+    }
+  }
+
+  parseVariable(error?: true): VariableAST
+  parseVariable(error?: false): VariableAST | undefined
+  parseVariable(error?: boolean): VariableAST | undefined
+  parseVariable(error = true): VariableAST | undefined {
+    const token = this.checkAndGetToken(TokenType.KEYWORD, ['몰', '모'], error)
+    if (token) {
+      const ast: VariableAST = {
+        type: ASTType.Variable,
+        index: token.value.length - 1
+      }
+
+      this.index++
+      ast.assign = this.parseMultiplyOrNumberOp(false)
+
+      return ast
     }
   }
 }
