@@ -209,4 +209,27 @@ export class ASTParser {
       return ast
     }
   }
+
+  parseConsoleIn(error?: true): ConsoleInAST
+  parseConsoleIn(error?: false): ConsoleInAST | undefined
+  parseConsoleIn(error?: boolean): ConsoleInAST | undefined
+  parseConsoleIn(error = true): ConsoleInAST | undefined {
+    const toVariable = this.parseVariable(error)
+    if (toVariable) {
+      if (this.checkToken(TokenType.KEYWORD, ['루'], error)) {
+        this.index++
+        if (this.checkToken(TokenType.OPERATOR, ['?'], error)) {
+          this.index++
+          const ast: ConsoleInAST = {
+            type: ASTType.ConsoleIn,
+            to: toVariable
+          }
+          this.index++
+
+          return ast
+        }
+        this.index--
+      }
+    }
+  }
 }
