@@ -78,13 +78,11 @@ export class ASTParser {
     return this.tokens[this.index]
   }
 
-  checkToken(type: TokenType, values: string[] = [], error = true): boolean {
+  checkToken(types: TokenType[], values: string[] = [], error = true): boolean {
     const token = this.getToken()
-    if (token.type !== type) {
+    if (!types.includes(token.type)) {
       if (error) {
-        throw new Error(
-          `Expected ${TokenType[type]}, but got ${TokenType[token.type]}`
-        )
+        throw new Error(`Expected ${types}, but got ${TokenType[token.type]}`)
       } else {
         return false
       }
@@ -103,23 +101,23 @@ export class ASTParser {
     return true
   }
 
-  checkAndGetToken(type: TokenType, values?: string[], error?: true): Token
+  checkAndGetToken(types: TokenType[], values?: string[], error?: true): Token
   checkAndGetToken(
-    type: TokenType,
+    types: TokenType[],
     values?: string[],
     error?: false
   ): Token | undefined
   checkAndGetToken(
-    type: TokenType,
+    types: TokenType[],
     values?: string[],
     error?: boolean
   ): Token | undefined
   checkAndGetToken(
-    type: TokenType,
+    types: TokenType[],
     values?: string[],
     error = true
   ): Token | undefined {
-    if (this.checkToken(type, values, error)) {
+    if (this.checkToken(types, values, error)) {
       return this.getToken()
     }
   }
@@ -128,7 +126,7 @@ export class ASTParser {
   parseNumberOp(error?: false): NumberOperatorAST | undefined
   parseNumberOp(error?: boolean): NumberOperatorAST | undefined
   parseNumberOp(error = true): NumberOperatorAST | undefined {
-    const token = this.checkAndGetToken(TokenType.OPERATOR, ['?', '!'], error)
+    const token = this.checkAndGetToken([TokenType.OPERATOR], ['?', '!'], error)
     if (token) {
       const ast: NumberOperatorAST = {
         type: ASTType.NumberOperator,
@@ -136,7 +134,7 @@ export class ASTParser {
       }
 
       this.index++
-      if (this.checkToken(TokenType.OPERATOR, ['?', '!'], false)) {
+      if (this.checkToken([TokenType.OPERATOR], ['?', '!'], false)) {
         ast.chain = this.parseNumberOp()
       }
 
@@ -159,7 +157,7 @@ export class ASTParser {
   ): MultiplyOperatorAST | undefined {
     left = left ?? this.parseNumberOp(error)
     if (left) {
-      if (this.checkToken(TokenType.OPERATOR, ['.'], error)) {
+      if (this.checkToken([TokenType.OPERATOR], ['.'], error)) {
         this.index++
         const right = this.parseNumberOp()
         this.index++
@@ -185,7 +183,7 @@ export class ASTParser {
     error = true
   ): NumberOperatorAST | MultiplyOperatorAST | undefined {
     const num = this.parseNumberOp(error)
-    if (this.checkToken(TokenType.OPERATOR, ['.'], false)) {
+    if (this.checkToken([TokenType.OPERATOR], ['.'], false)) {
       return this.parseMultiplyOp(num)
     } else {
       return num
@@ -196,7 +194,11 @@ export class ASTParser {
   parseVariable(error?: false): VariableAST | undefined
   parseVariable(error?: boolean): VariableAST | undefined
   parseVariable(error = true): VariableAST | undefined {
-    const token = this.checkAndGetToken(TokenType.KEYWORD, ['몰', '모'], error)
+    const token = this.checkAndGetToken(
+      [TokenType.KEYWORD],
+      ['몰', '모'],
+      error
+    )
     if (token) {
       const ast: VariableAST = {
         type: ASTType.Variable,
@@ -210,15 +212,33 @@ export class ASTParser {
     }
   }
 
+  parseValue(error?: true): ValueASTs
+  parseValue(error?: false): ValueASTs | undefined
+  parseValue(error?: boolean): ValueASTs | undefined
+  parseValue(error = true): ValueASTs | undefined {
+    const token = this.checkAndGetToken(
+      [TokenType.KEYWORD, TokenType.OPERATOR],
+      ['몰', '모', '?', '!'],
+      error
+    )
+    if (token) {
+      if (token.type === TokenType.KEYWORD) {
+        return this.parseVariable(error)
+      } else {
+        return this.parseMultiplyOrNumberOp(error)
+      }
+    }
+  }
+
   parseConsoleIn(error?: true): ConsoleInAST
   parseConsoleIn(error?: false): ConsoleInAST | undefined
   parseConsoleIn(error?: boolean): ConsoleInAST | undefined
   parseConsoleIn(error = true): ConsoleInAST | undefined {
     const toVariable = this.parseVariable(error)
     if (toVariable) {
-      if (this.checkToken(TokenType.KEYWORD, ['루'], error)) {
+      if (this.checkToken([TokenType.KEYWORD], ['루'], error)) {
         this.index++
-        if (this.checkToken(TokenType.OPERATOR, ['?'], error)) {
+        if (this.checkToken([TokenType.OPERATOR], ['?'], error)) {
           this.index++
           const ast: ConsoleInAST = {
             type: ASTType.ConsoleIn,
