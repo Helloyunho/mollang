@@ -252,4 +252,23 @@ export class ASTParser {
       }
     }
   }
+
+  parseConsoleOut(error?: true): ConsoleOutAST
+  parseConsoleOut(error?: false): ConsoleOutAST | undefined
+  parseConsoleOut(error?: boolean): ConsoleOutAST | undefined
+  parseConsoleOut(error = true): ConsoleOutAST | undefined {
+    const value = this.parseValue(error)
+    if (value) {
+      if (this.checkToken([TokenType.KEYWORD], ['루'], error)) {
+        this.index++
+        const ast: ConsoleOutAST = {
+          type: ASTType.ConsoleOut,
+          value
+        }
+        this.index++
+
+        return ast
+      }
+    }
+  }
 }
