@@ -1,4 +1,5 @@
 import { Lexer } from './tokenizer.ts'
+import { ASTParser } from './ast.ts'
 
 const lexer = new Lexer(`
 몰??
@@ -13,4 +14,12 @@ const lexer = new Lexer(`
 
 가?자!`)
 
-console.log(lexer.tokens)
+const test = new Lexer('???!?!!??!?!')
+console.log(test.tokens)
+const ast = new ASTParser(test.tokens)
+console.log(
+  Deno.inspect(ast.parseNumberOp(), {
+    depth: Infinity,
+    colors: true
+  })
+)
