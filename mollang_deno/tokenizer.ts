@@ -81,7 +81,7 @@ export class Lexer {
           findKeyword = false
         }
         this.index++
-        if (this.index >= this.input.length || keyword.length >= 3) {
+        if (this.index >= this.input.length) {
           findKeyword = false
         }
       }

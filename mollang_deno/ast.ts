@@ -206,7 +206,7 @@ export class ASTParser {
       }
 
       this.index++
-      ast.assign = this.parseMultiplyOrNumberOp(false)
+      ast.assign = this.parseValue(false)
 
       return ast
     }
