@@ -30,7 +30,7 @@ export type ValueASTs = NumberOperatorAST | MultiplyOperatorAST | VariableAST
 export interface NumberOperatorAST {
   type: ASTType.NumberOperator
   opType: '+' | '-'
-  chain?: NumberOperatorAST
+  chain?: ValueASTs
 }
 
 export interface MultiplyOperatorAST {
@@ -42,7 +42,7 @@ export interface MultiplyOperatorAST {
 export interface VariableAST {
   type: ASTType.Variable
   index: number
-  assign?: ValueASTs
+  chain?: ValueASTs
 }
 
 export interface ConsoleInAST {
@@ -134,32 +134,33 @@ export class ASTParser {
       }
 
       this.index++
-      if (this.checkToken([TokenType.OPERATOR], ['?', '!'], false)) {
-        ast.chain = this.parseNumberOp()
+      const chain = this.parseValue(false)
+      if (chain !== undefined) {
+        ast.chain = chain
       }
 
       return ast
     }
   }
 
-  parseMultiplyOp(left?: NumberOperatorAST, error?: true): MultiplyOperatorAST
+  parseMultiplyOp(left?: ValueASTs, error?: true): MultiplyOperatorAST
   parseMultiplyOp(
-    left?: NumberOperatorAST,
+    left?: ValueASTs,
     error?: false
   ): MultiplyOperatorAST | undefined
   parseMultiplyOp(
-    left?: NumberOperatorAST,
+    left?: ValueASTs,
     error?: boolean
   ): MultiplyOperatorAST | undefined
   parseMultiplyOp(
-    left?: NumberOperatorAST,
+    left?: ValueASTs,
     error = true
   ): MultiplyOperatorAST | undefined {
-    left = left ?? this.parseNumberOp(error)
+    left = left ?? this.parseValue(error)
     if (left) {
       if (this.checkToken([TokenType.OPERATOR], ['.'], error)) {
         this.index++
-        const right = this.parseNumberOp()
+        const right = this.parseValue()
         this.index++
         const ast: MultiplyOperatorAST = {
           type: ASTType.MultiplyOperator,
@@ -169,24 +170,6 @@ export class ASTParser {
 
         return ast
       }
-    }
-  }
-
-  parseMultiplyOrNumberOp(error?: true): NumberOperatorAST | MultiplyOperatorAST
-  parseMultiplyOrNumberOp(
-    error?: false
-  ): NumberOperatorAST | MultiplyOperatorAST | undefined
-  parseMultiplyOrNumberOp(
-    error?: boolean
-  ): NumberOperatorAST | MultiplyOperatorAST | undefined
-  parseMultiplyOrNumberOp(
-    error = true
-  ): NumberOperatorAST | MultiplyOperatorAST | undefined {
-    const num = this.parseNumberOp(error)
-    if (this.checkToken([TokenType.OPERATOR], ['.'], false)) {
-      return this.parseMultiplyOp(num)
-    } else {
-      return num
     }
   }
 
@@ -206,7 +189,7 @@ export class ASTParser {
       }
 
       this.index++
-      ast.assign = this.parseValue(false)
+      ast.chain = this.parseValue(false)
 
       return ast
     }
@@ -221,11 +204,21 @@ export class ASTParser {
       ['몰', '모', '?', '!'],
       error
     )
+    let value: ValueASTs | undefined
     if (token) {
       if (token.type === TokenType.KEYWORD) {
-        return this.parseVariable(error)
+        value = this.parseVariable(error)
       } else {
-        return this.parseMultiplyOrNumberOp(error)
+        value = this.parseNumberOp(error)
+      }
+
+      if (
+        value !== undefined &&
+        this.checkToken([TokenType.OPERATOR], ['.'], false)
+      ) {
+        return this.parseMultiplyOp(value, error)
+      } else {
+        return value
       }
     }
   }
