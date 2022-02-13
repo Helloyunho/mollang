@@ -9,7 +9,9 @@ export enum ASTType {
   ConsoleOut,
   ConsoleIn,
   ConsoleConvertedOut,
-  Condition
+  Condition,
+  Goto,
+  Exit
 }
 
 export type AST =
@@ -63,6 +65,16 @@ export interface ConditionAST {
   type: ASTType.Condition
   condition: ValueASTs
   body: AST[]
+}
+
+export interface GotoAST {
+  type: ASTType.Goto
+  line: ValueASTs
+}
+
+export interface ExitAST {
+  type: ASTType.Exit
+  code: ValueASTs
 }
 
 export class ASTParser {
@@ -317,6 +329,27 @@ export class ASTParser {
 
           return ast
         }
+      }
+    }
+  }
+
+  parseGoto(error?: true): GotoAST
+  parseGoto(error?: false): GotoAST | undefined
+  parseGoto(error?: boolean): GotoAST | undefined
+  parseGoto(error = true): GotoAST | undefined {
+    if (this.checkToken([TokenType.KEYWORD], ['가'], error)) {
+      this.index++
+      const line = this.parseValue(error)
+      if (line) {
+        this.checkToken([TokenType.KEYWORD], ['자!'])
+        this.index++
+        const ast: GotoAST = {
+          type: ASTType.Goto,
+          line
+        }
+        this.index++
+
+        return ast
       }
     }
   }
