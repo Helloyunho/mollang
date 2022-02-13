@@ -353,4 +353,23 @@ export class ASTParser {
       }
     }
   }
+
+  parseExit(error?: true): ExitAST
+  parseExit(error?: false): ExitAST | undefined
+  parseExit(error?: boolean): ExitAST | undefined
+  parseExit(error = true): ExitAST | undefined {
+    if (this.checkToken([TokenType.KEYWORD], ['0ㅅ0'], error)) {
+      this.index++
+      const code = this.parseValue(error)
+      if (code) {
+        const ast: ExitAST = {
+          type: ASTType.Exit,
+          code
+        }
+        this.index++
+
+        return ast
+      }
+    }
+  }
 }

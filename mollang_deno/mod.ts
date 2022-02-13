@@ -14,11 +14,11 @@ const lexer = new Lexer(`
 
 가?자!`)
 
-const test = new Lexer(`가???자!`)
+const test = new Lexer(`0ㅅ0?`)
 console.log(test.tokens)
 const ast = new ASTParser(test.tokens)
 console.log(
-  Deno.inspect(ast.parseGoto(), {
+  Deno.inspect(ast.parseExit(), {
     depth: Infinity,
     colors: true
   })
