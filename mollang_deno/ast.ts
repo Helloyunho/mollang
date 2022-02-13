@@ -13,7 +13,6 @@ export enum ASTType {
 }
 
 export type AST =
-  | ProgramAST
   | ValueASTs
   | ConsoleInAST
   | ConsoleOutAST
@@ -78,27 +77,38 @@ export class ASTParser {
     return this.tokens[this.index]
   }
 
-  checkToken(types: TokenType[], values: string[] = [], error = true): boolean {
-    const token = this.getToken()
-    if (!types.includes(token.type)) {
-      if (error) {
-        throw new Error(`Expected ${types}, but got ${TokenType[token.type]}`)
-      } else {
-        return false
+  checkToken(
+    types: TokenType[],
+    values: string[] = [],
+    error = true,
+    skipLine = false
+  ): boolean {
+    while (true) {
+      const token = this.getToken()
+      if (skipLine && token.type === TokenType.NEWLINE) {
+        this.index++
+        continue
       }
-    } else if (
-      values.length !== 0 &&
-      !values.some((v) => token.value.startsWith(v))
-    ) {
-      if (error) {
-        throw new Error(
-          `Expected syntax between ${values}, but got ${token.value}`
-        )
-      } else {
-        return false
+      if (!types.includes(token.type)) {
+        if (error) {
+          throw new Error(`Expected ${types}, but got ${TokenType[token.type]}`)
+        } else {
+          return false
+        }
+      } else if (
+        values.length !== 0 &&
+        !values.some((v) => token.value.startsWith(v))
+      ) {
+        if (error) {
+          throw new Error(
+            `Expected syntax between ${values}, but got ${token.value}`
+          )
+        } else {
+          return false
+        }
       }
+      return true
     }
-    return true
   }
 
   checkAndGetToken(types: TokenType[], values?: string[], error?: true): Token
@@ -273,11 +283,35 @@ export class ASTParser {
       this.index++
       const value = this.parseValue(error)
       if (value) {
-        if (this.checkToken([TokenType.KEYWORD], ['루'], error)) {
+        this.checkToken([TokenType.KEYWORD], ['루'])
+        this.index++
+        const ast: ConsoleConvertedOutAST = {
+          type: ASTType.ConsoleConvertedOut,
+          value
+        }
+        this.index++
+
+        return ast
+      }
+    }
+  }
+
+  parseCondition(error?: true): ConditionAST
+  parseCondition(error?: false): ConditionAST | undefined
+  parseCondition(error?: boolean): ConditionAST | undefined
+  parseCondition(error = true): ConditionAST | undefined {
+    const condition = this.parseValue(error)
+    if (condition) {
+      if (this.checkToken([TokenType.KEYWORD], ['은?행'], error, true)) {
+        this.index++
+        const body = this.parseValue(error)
+        if (body) {
+          this.checkToken([TokenType.KEYWORD], ['털!자'], true, true)
           this.index++
-          const ast: ConsoleConvertedOutAST = {
-            type: ASTType.ConsoleConvertedOut,
-            value
+          const ast: ConditionAST = {
+            type: ASTType.Condition,
+            condition,
+            body: [body]
           }
           this.index++
 
