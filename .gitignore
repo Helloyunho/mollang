@@ -1,2 +1,4 @@
 .vscode
 .DS_Store
+mollang_deno/ast.json
+mollang_deno/token.json

@@ -39,11 +39,7 @@ export class Lexer {
   tokenize() {
     while (this.index < this.input.length) {
       let char = this.input[this.index]
-      if (char === ' ') {
-        this.index++
-        continue
-      }
-      if (char === '\n') {
+      if (char === '\n' || char === ' ') {
         this.tokens.push({
           type: TokenType.NEWLINE,
           value: '\n',

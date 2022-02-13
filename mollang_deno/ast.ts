@@ -196,7 +196,6 @@ export class ASTParser {
       if (this.checkToken([TokenType.OPERATOR], ['.'], error)) {
         this.index++
         const right = this.parseValue()
-        this.index++
         const ast: MultiplyOperatorAST = {
           type: ASTType.MultiplyOperator,
           left,
@@ -314,7 +313,6 @@ export class ASTParser {
           type: ASTType.ConsoleConvertedOut,
           value
         }
-        this.index++
 
         return ast
       }
@@ -418,22 +416,30 @@ export class ASTParser {
             const consoleIn = this.convertOutToIn(consoleOut)
             this.index++
             asts.push(consoleIn)
+            continue
           } else {
             asts.push(consoleOut)
+            continue
           }
         } else if (this.checkToken([TokenType.KEYWORD], ['은?행'], false)) {
           const condition = this.parseCondition(true, value)
           asts.push(condition)
+          continue
         } else {
           asts.push(value)
+          continue
         }
       } else if (this.checkToken([TokenType.KEYWORD], ['아'], false)) {
         asts.push(this.parseConsoleConvertedOut())
+        continue
       } else if (this.checkToken([TokenType.KEYWORD], ['가'], false)) {
         asts.push(this.parseGoto())
+        continue
       } else if (this.checkToken([TokenType.KEYWORD], ['0ㅅ0'], false)) {
         asts.push(this.parseExit())
+        continue
       } else if (this.checkToken([TokenType.NEWLINE], undefined, false)) {
+        this.index++
         continue
       }
       break

@@ -18,11 +18,12 @@ const test = new Lexer(`몰????.??????????? 모올????.????.?? 모오올몰모�
 아모오올!!!!루모오올모올아모오올!!!!!!!루아모오올루아모오올루
 아모오올???루아몰루아모올루몰모올아몰???????????루아모오올???루
 아몰모올??????루아모오올루아모오올!!!!!!!!루아모올?루`)
-console.log(test.tokens)
+Deno.writeFile(
+  'token.json',
+  new TextEncoder().encode(JSON.stringify(test.tokens, null, 2))
+)
 const ast = new ASTParser(test.tokens)
-console.log(
-  Deno.inspect(ast.parseProgram(), {
-    depth: Infinity,
-    colors: true
-  })
+Deno.writeFile(
+  'ast.json',
+  new TextEncoder().encode(JSON.stringify(ast.parseProgram(), null, 2))
 )
