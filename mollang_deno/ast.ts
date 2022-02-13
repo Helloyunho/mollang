@@ -20,6 +20,8 @@ export type AST =
   | ConsoleOutAST
   | ConsoleConvertedOutAST
   | ConditionAST
+  | GotoAST
+  | ExitAST
 
 export interface ProgramAST {
   type: ASTType.Program
@@ -245,11 +247,11 @@ export class ASTParser {
     }
   }
 
-  parseConsoleIn(error?: true): ConsoleInAST
-  parseConsoleIn(error?: false): ConsoleInAST | undefined
-  parseConsoleIn(error?: boolean): ConsoleInAST | undefined
-  parseConsoleIn(error = true): ConsoleInAST | undefined {
-    const toVariable = this.parseVariable(error)
+  parseConsoleIn(error?: true, left?: VariableAST): ConsoleInAST
+  parseConsoleIn(error?: false, left?: VariableAST): ConsoleInAST | undefined
+  parseConsoleIn(error?: boolean, left?: VariableAST): ConsoleInAST | undefined
+  parseConsoleIn(error = true, left?: VariableAST): ConsoleInAST | undefined {
+    const toVariable = left ?? this.parseVariable(error)
     if (toVariable) {
       if (this.checkToken([TokenType.KEYWORD], ['루'], error)) {
         this.index++
@@ -268,11 +270,11 @@ export class ASTParser {
     }
   }
 
-  parseConsoleOut(error?: true): ConsoleOutAST
-  parseConsoleOut(error?: false): ConsoleOutAST | undefined
-  parseConsoleOut(error?: boolean): ConsoleOutAST | undefined
-  parseConsoleOut(error = true): ConsoleOutAST | undefined {
-    const value = this.parseValue(error)
+  parseConsoleOut(error?: true, left?: ValueASTs): ConsoleOutAST
+  parseConsoleOut(error?: false, left?: ValueASTs): ConsoleOutAST | undefined
+  parseConsoleOut(error?: boolean, left?: ValueASTs): ConsoleOutAST | undefined
+  parseConsoleOut(error = true, left?: ValueASTs): ConsoleOutAST | undefined {
+    const value = left ?? this.parseValue(error)
     if (value) {
       if (this.checkToken([TokenType.KEYWORD], ['루'], error)) {
         this.index++
@@ -308,22 +310,22 @@ export class ASTParser {
     }
   }
 
-  parseCondition(error?: true): ConditionAST
-  parseCondition(error?: false): ConditionAST | undefined
-  parseCondition(error?: boolean): ConditionAST | undefined
-  parseCondition(error = true): ConditionAST | undefined {
-    const condition = this.parseValue(error)
+  parseCondition(error?: true, left?: ValueASTs): ConditionAST
+  parseCondition(error?: false, left?: ValueASTs): ConditionAST | undefined
+  parseCondition(error?: boolean, left?: ValueASTs): ConditionAST | undefined
+  parseCondition(error = true, left?: ValueASTs): ConditionAST | undefined {
+    const condition = left ?? this.parseValue(error)
     if (condition) {
       if (this.checkToken([TokenType.KEYWORD], ['은?행'], error, true)) {
         this.index++
-        const body = this.parseValue(error)
+        const body = this.parseCodes()
         if (body) {
           this.checkToken([TokenType.KEYWORD], ['털!자'], true, true)
           this.index++
           const ast: ConditionAST = {
             type: ASTType.Condition,
             condition,
-            body: [body]
+            body
           }
           this.index++
 
@@ -371,5 +373,61 @@ export class ASTParser {
         return ast
       }
     }
+  }
+
+  convertOutToIn(outAST: ConsoleOutAST): ConsoleInAST {
+    if (outAST.value.type === ASTType.Variable) {
+      const ast: ConsoleInAST = {
+        type: ASTType.ConsoleIn,
+        to: outAST.value
+      }
+      return ast
+    } else {
+      throw new Error('ConsoleOut AST value is not Variable.')
+    }
+  }
+
+  parseCodes(): AST[] {
+    const asts: AST[] = []
+    while (true) {
+      if (
+        this.checkToken(
+          [TokenType.KEYWORD, TokenType.OPERATOR],
+          ['몰', '모', '?', '!'],
+          false
+        )
+      ) {
+        const value = this.parseValue()
+        if (this.checkToken([TokenType.KEYWORD], ['루'], false)) {
+          const consoleOut = this.parseConsoleOut(true, value)
+          if (
+            value.type === ASTType.Variable &&
+            this.checkToken([TokenType.OPERATOR], ['?'], false)
+          ) {
+            const consoleIn = this.convertOutToIn(consoleOut)
+            this.index++
+            asts.push(consoleIn)
+          } else {
+            asts.push(consoleOut)
+          }
+        } else if (this.checkToken([TokenType.KEYWORD], ['은?행'], false)) {
+          const condition = this.parseCondition(true, value)
+          asts.push(condition)
+        } else {
+          asts.push(value)
+        }
+      } else if (this.checkToken([TokenType.KEYWORD], ['아'], false)) {
+        asts.push(this.parseConsoleConvertedOut())
+      } else if (this.checkToken([TokenType.KEYWORD], ['가'], false)) {
+        asts.push(this.parseGoto())
+      } else if (this.checkToken([TokenType.KEYWORD], ['0ㅅ0'], false)) {
+        asts.push(this.parseExit())
+      } else if (this.checkToken([TokenType.NEWLINE], undefined, false)) {
+        continue
+      }
+      break
+    }
+
+    return asts
   }
 }
