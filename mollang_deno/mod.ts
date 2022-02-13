@@ -21,7 +21,7 @@ const test = new Lexer(`몰????.??????????? 모올????.????.?? 모오올몰모�
 console.log(test.tokens)
 const ast = new ASTParser(test.tokens)
 console.log(
-  Deno.inspect(ast.parseCodes(), {
+  Deno.inspect(ast.parseProgram(), {
     depth: Infinity,
     colors: true
   })

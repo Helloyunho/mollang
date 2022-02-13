@@ -99,6 +99,17 @@ export class ASTParser {
   ): boolean {
     while (true) {
       const token = this.getToken()
+      if (token === undefined) {
+        if (types.includes(TokenType.EOL)) {
+          return true
+        } else {
+          if (error) {
+            throw new Error(`Unexpected EOL`)
+          } else {
+            return false
+          }
+        }
+      }
       if (skipLine && token.type === TokenType.NEWLINE) {
         this.index++
         continue
@@ -429,5 +440,19 @@ export class ASTParser {
     }
 
     return asts
+  }
+
+  parseProgram(): ProgramAST {
+    let asts: AST[] = []
+    let lastASTs = this.parseCodes()
+    while (lastASTs.length !== 0) {
+      asts = [...asts, ...lastASTs]
+      lastASTs = this.parseCodes()
+    }
+
+    return {
+      type: ASTType.Program,
+      body: asts
+    }
   }
 }
