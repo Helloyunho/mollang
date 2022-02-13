@@ -271,7 +271,6 @@ export class ASTParser {
             type: ASTType.ConsoleIn,
             to: toVariable
           }
-          this.index++
 
           return ast
         }
@@ -292,7 +291,6 @@ export class ASTParser {
           type: ASTType.ConsoleOut,
           value
         }
-        this.index++
 
         return ast
       }
@@ -328,18 +326,15 @@ export class ASTParser {
       if (this.checkToken([TokenType.KEYWORD], ['은?행'], error, true)) {
         this.index++
         const body = this.parseCodes()
-        if (body) {
-          this.checkToken([TokenType.KEYWORD], ['털!자'], true, true)
-          this.index++
-          const ast: ConditionAST = {
-            type: ASTType.Condition,
-            condition,
-            body
-          }
-          this.index++
-
-          return ast
+        this.checkToken([TokenType.KEYWORD], ['털!자'], true, true)
+        this.index++
+        const ast: ConditionAST = {
+          type: ASTType.Condition,
+          condition,
+          body
         }
+
+        return ast
       }
     }
   }
@@ -358,7 +353,6 @@ export class ASTParser {
           type: ASTType.Goto,
           line
         }
-        this.index++
 
         return ast
       }
