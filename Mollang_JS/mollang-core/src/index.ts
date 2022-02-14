@@ -1,22 +1,23 @@
-import parse from "./parse";
-import run from "./runtime";
-import exitMessage from "./exit";
+import compile from "./compile";
+import run, { ENV } from "./runtime";
+import tokenize from "./tokenizer";
+import show from "./result";
 
 /**
  * Mollang 실행
  * @param code - 실행할 Mollang 코드
  * @param options - 옵션
- * @returns [출력, 오류 코드, 오류, 파싱 결과]
+ * @returns [출력, 오류 코드, 오류 위치, 파싱 결과]
  */
 export default function main(
     code: string,
     options: {
         maxRecursion?: number;
         outputFn?: (msg: string) => void;
-        errorFn?: (code: number, msg: string) => void;
+        errorFn?: (code: number, position: number) => void;
         inputFn: () => string;
     }
-) {
+): [string[], number[], number[], string] {
     const { maxRecursion = 100000, outputFn, errorFn, inputFn } = options;
 
     code = code
@@ -26,28 +27,36 @@ export default function main(
 
     const outputs: string[] = [];
     const errorCodes: number[] = [];
-    const errors: string[] = [];
+    const errorPositions: number[] = [];
 
-    const parsed = parse(code, (...args) => {
-        const [code, msg] = exitMessage(...args);
-        errorFn && errorFn(code, msg);
-        errorCodes.push(code);
-        errors.push(msg);
+    const data = tokenize(code, (errorCode, position) => {
+        errorFn && errorFn(errorCode, position);
+        errorCodes.push(errorCode);
+        errorPositions.push(position);
     });
+    const compiled = compile(data, (errorCode, position) => {
+        errorFn && errorFn(errorCode, position);
+        errorCodes.push(errorCode);
+        errorPositions.push(position);
+    });
+
+    const defaultEnv = new ENV();
+
     run(
+        defaultEnv,
+        data,
+        compiled,
         maxRecursion,
         (msg) => {
             outputFn && outputFn(msg.toString());
             outputs.push(msg.toString());
         },
-        (...args) => {
-            let [code, msg] = exitMessage(...args);
-            errorFn && errorFn(code, msg);
-            errorCodes.push(code);
-            errors.push(msg);
+        (errorCode, position) => {
+            errorFn && errorFn(errorCode, position);
+            errorCodes.push(errorCode);
+            errorPositions.push(position);
         },
-        inputFn,
-        ...parsed
+        inputFn
     );
-    return [outputs, errorCodes, errors, parsed];
+    return [outputs, errorCodes, errorPositions, show(data, compiled)];
 }

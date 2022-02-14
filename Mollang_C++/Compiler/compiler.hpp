@@ -6,37 +6,41 @@ using namespace std;
 class Compiled {
 public:
 	vector<bool> literal_owned;
+	vector<bool> no_calc;
 };
 
 Compiled compile(Tokenized x) {
-	Compiled ret = { vector<bool>(x.literals.size()) };
+	Compiled ret = { vector<bool>(x.literals.size()), vector<bool>(x.literals.size()) };
 	for (ll i = 0; i < x.tokens.size(); i++) {
 		ll cur = get<0>(x.tokens[i]);
 		if (cur == -1) continue;
-		if (nonNumberParam.count(cur)) continue;
 
 		if (back_parametered.count(cur)) {
 			if (i == x.tokens.size() - 1) {
 				if (!not_always_require_parameter.count(cur))
-					ErrorCode(MISSING_PARAMETER);
+					ErrorCode(MISSING_PARAMETER, x.tokens_position[i]);
 				continue;
 			}
 			if (get<0>(x.tokens[i + 1]) == LITERAL) {
 				if (ret.literal_owned[get<1>(x.tokens[i + 1])])
-					ErrorCode(MISSING_PARAMETER);
+					ErrorCode(MISSING_PARAMETER, x.tokens_position[i]);
 				ret.literal_owned[get<1>(x.tokens[i + 1])] = true;
+				if (non_number_parameter.count(cur))
+					ret.no_calc[get<1>(x.tokens[i + 1])] = true;
 			}
 			else if (!not_always_require_parameter.count(cur))
-				ErrorCode(MISSING_PARAMETER);
+				ErrorCode(MISSING_PARAMETER, x.tokens_position[i]);
 		}
 		if (front_parametered.count(cur)) {
-			if (i == 0) ErrorCode(MISSING_PARAMETER);
+			if (i == 0) ErrorCode(MISSING_PARAMETER, x.tokens_position[i]);
 			if (get<0>(x.tokens[i - 1]) == LITERAL) {
 				if (ret.literal_owned[get<1>(x.tokens[i - 1])])
-					ErrorCode(MISSING_PARAMETER);
+					ErrorCode(MISSING_PARAMETER, x.tokens_position[i]);
 				ret.literal_owned[get<1>(x.tokens[i - 1])] = true;
+				if(non_number_parameter.count(cur))
+					ret.no_calc[get<1>(x.tokens[i - 1])] = true;
 			}
-			else ErrorCode(MISSING_PARAMETER);
+			else ErrorCode(MISSING_PARAMETER, x.tokens_position[i]);
 		}
 		if (cur >= PAIR_KEYWORD) {
 			ll t = i + 1;
